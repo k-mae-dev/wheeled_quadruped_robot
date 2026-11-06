@@ -14,20 +14,22 @@ from . import agents
 ##
 
 gym.register(
-    id="Wheeled-Quadruped-Velocity-v0",
+    id="Wheeled-Quadruped-Velocity",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
+        "default_agent": "rsl_rl",
         "env_cfg_entry_point": f"{__name__}.velocity_env_cfg:WheeledQuadrupedVelocityEnvCfg",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:WheeledQuadrupedVelocityPPORunnerCfg",
     },
 )
 
 gym.register(
-    id="Wheeled-Quadruped-Velocity-Play-v0",
+    id="Wheeled-Quadruped-Velocity-Play",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
+        "default_agent": "rsl_rl",
         "env_cfg_entry_point": f"{__name__}.velocity_env_cfg:WheeledQuadrupedVelocityEnvCfg_PLAY",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:WheeledQuadrupedVelocityPPORunnerCfg",
     },
@@ -35,20 +37,22 @@ gym.register(
 
 # --- Rough-terrain variants (drive while balancing on uneven ground) ---
 gym.register(
-    id="Wheeled-Quadruped-Velocity-Rough-v0",
+    id="Wheeled-Quadruped-Velocity-Rough",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
+        "default_agent": "rsl_rl",
         "env_cfg_entry_point": f"{__name__}.rough_env_cfg:WheeledQuadrupedVelocityRoughEnvCfg",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:WheeledQuadrupedVelocityRoughPPORunnerCfg",
     },
 )
 
 gym.register(
-    id="Wheeled-Quadruped-Velocity-Rough-Play-v0",
+    id="Wheeled-Quadruped-Velocity-Rough-Play",
     entry_point="isaaclab.envs:ManagerBasedRLEnv",
     disable_env_checker=True,
     kwargs={
+        "default_agent": "rsl_rl",
         "env_cfg_entry_point": f"{__name__}.rough_env_cfg:WheeledQuadrupedVelocityRoughEnvCfg_PLAY",
         "rsl_rl_cfg_entry_point": f"{agents.__name__}.rsl_rl_ppo_cfg:WheeledQuadrupedVelocityRoughPPORunnerCfg",
     },
