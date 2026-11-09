@@ -11,9 +11,10 @@ balance on uneven ground. Everything else — observations, actions, rewards,
 terminations, domain randomization — is inherited from the flat balance task.
 """
 
-import isaaclab.sim as sim_utils
 from isaaclab.terrains import TerrainImporterCfg
 from isaaclab.utils import configclass
+
+from isaaclab_physx.sim.spawners.materials import PhysxRigidBodyMaterialCfg
 
 from wheeled_quadruped.terrains import WHEELED_ROUGH_TERRAINS_CFG
 
@@ -33,7 +34,7 @@ class WheeledQuadrupedRoughSceneCfg(WheeledQuadrupedSceneCfg):
         terrain_generator=WHEELED_ROUGH_TERRAINS_CFG,
         max_init_terrain_level=5,
         collision_group=-1,
-        physics_material=sim_utils.RigidBodyMaterialCfg(
+        physics_material=PhysxRigidBodyMaterialCfg(
             friction_combine_mode="multiply",
             restitution_combine_mode="multiply",
             static_friction=1.0,

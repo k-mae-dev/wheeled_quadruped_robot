@@ -5,7 +5,11 @@
 
 from isaaclab.utils import configclass
 
-from isaaclab_rl.rsl_rl import RslRlOnPolicyRunnerCfg, RslRlPpoActorCriticCfg, RslRlPpoAlgorithmCfg
+from isaaclab_rl.rsl_rl import (
+    RslRlOnPolicyRunnerCfg,
+    RslRlMLPModelCfg,
+    RslRlPpoAlgorithmCfg,
+)
 
 
 @configclass
@@ -14,18 +18,19 @@ class WheeledQuadrupedBalancePPORunnerCfg(RslRlOnPolicyRunnerCfg):
     max_iterations = 1000
     save_interval = 100
     experiment_name = "wheeled_quadruped_balance"
-    empirical_normalization = False
     # Asymmetric actor-critic: the actor reads the onboard-only "policy" group and
-    # the critic reads the privileged "critic" group. In rsl-rl (>=3.0) this mapping
-    # is resolved from the runner cfg, not from the vec-env wrapper.
-    obs_groups = {"policy": ["policy"], "critic": ["critic"]}
-    policy = RslRlPpoActorCriticCfg(
-        init_noise_std=1.0,
-        actor_obs_normalization=False,
-        critic_obs_normalization=False,
-        actor_hidden_dims=[128, 128],
-        critic_hidden_dims=[128, 128],
+    # the critic reads the privileged "critic" group. RSL-RL 5 uses the "actor" set.
+    obs_groups = {"actor": ["policy"], "critic": ["critic"]}
+    actor = RslRlMLPModelCfg(
+        hidden_dims=[128, 128],
         activation="elu",
+        obs_normalization=False,
+        distribution_cfg=RslRlMLPModelCfg.GaussianDistributionCfg(init_std=1.0, std_type="scalar"),
+    )
+    critic = RslRlMLPModelCfg(
+        hidden_dims=[128, 128],
+        activation="elu",
+        obs_normalization=False,
     )
     algorithm = RslRlPpoAlgorithmCfg(
         value_loss_coef=1.0,

@@ -1,8 +1,4 @@
-"""Wheeled quadruped Isaac Lab extension package.
+"""External Isaac Lab tasks discovered via the ``isaaclab.tasks`` entry point.
 
-Importing this package registers all gym tasks (balance and velocity) as a side
-effect, so a plain ``import wheeled_quadruped`` is enough to make the tasks
-available through :func:`gymnasium.make`.
+Import ``wheeled_quadruped.tasks`` explicitly when using Gymnasium outside the CLI.
 """
-
-from . import tasks  # noqa: F401

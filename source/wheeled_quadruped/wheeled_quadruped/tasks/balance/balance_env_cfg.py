@@ -25,7 +25,11 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
 from isaaclab.utils import configclass
-from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
+from isaaclab.utils.noise import UniformNoiseCfg as Unoise
+from isaaclab.visualizers import VisualizerCfg
+
+from isaaclab_physx.physics import PhysxCfg
+from isaaclab_tasks.utils import PresetCfg
 
 from wheeled_quadruped.assets import WHEELED_QUADRUPED_CFG
 
@@ -60,7 +64,7 @@ class WheeledQuadrupedSceneCfg(InteractiveSceneCfg):
     distant_light = AssetBaseCfg(
         prim_path="/World/DistantLight",
         spawn=sim_utils.DistantLightCfg(color=(0.9, 0.9, 0.9), intensity=2500.0),
-        init_state=AssetBaseCfg.InitialStateCfg(rot=(0.738, 0.477, 0.477, 0.0)),
+        init_state=AssetBaseCfg.InitialStateCfg(rot=(0.477, 0.477, 0.0, 0.738)),  # XYZW
     )
 
 
@@ -234,6 +238,14 @@ class TerminationsCfg:
 
 
 @configclass
+class WheeledQuadrupedPhysicsCfg(PresetCfg):
+    """Isaac Sim PhysX only; do not silently select a different physics engine."""
+
+    isaacsim_physx: PhysxCfg = PhysxCfg()
+    default: PhysxCfg = isaacsim_physx
+
+
+@configclass
 class WheeledQuadrupedBalanceEnvCfg(ManagerBasedRLEnvCfg):
     """Configuration for the wheeled quadruped balance environment."""
 
@@ -255,8 +267,8 @@ class WheeledQuadrupedBalanceEnvCfg(ManagerBasedRLEnvCfg):
         # simulation settings
         self.sim.dt = 0.005
         self.sim.render_interval = self.decimation
-        # viewer settings
-        self.viewer.eye = (8.0, 0.0, 5.0)
+        self.sim.physics = WheeledQuadrupedPhysicsCfg()
+        self.sim.visualizer_cfgs = VisualizerCfg(eye=(8.0, 0.0, 5.0))
 
 
 @configclass

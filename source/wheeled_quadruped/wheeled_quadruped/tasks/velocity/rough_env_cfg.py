@@ -18,7 +18,7 @@ from isaaclab.managers import CurriculumTermCfg as CurrTerm
 from isaaclab.utils import configclass
 
 # terrain_levels_vel is a locomotion-task curriculum, not part of core isaaclab.envs.mdp.
-from isaaclab_tasks.manager_based.locomotion.velocity.mdp import terrain_levels_vel
+from isaaclab_tasks.core.velocity.mdp import terrain_levels_vel
 
 from wheeled_quadruped.tasks.balance.rough_env_cfg import WheeledQuadrupedRoughSceneCfg
 

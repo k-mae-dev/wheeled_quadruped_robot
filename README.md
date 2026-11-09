@@ -6,10 +6,10 @@
 
 The robot stands pitched up, balancing segway-style on its two rear wheels. Using massively parallel simulation in **NVIDIA Isaac Lab / Isaac Sim**, a **PPO** policy learns to keep the body upright at a target height and to follow velocity commands, actuating its rear wheels and front thighs from **onboard sensing alone**, across thousands of environments trained in parallel on the GPU.
 
-[![Isaac Lab](https://img.shields.io/badge/NVIDIA-Isaac%20Lab%202.3.2-76B900?logo=nvidia&logoColor=white)](https://isaac-sim.github.io/IsaacLab/)
-[![Isaac Sim](https://img.shields.io/badge/Isaac%20Sim-5.1-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/isaac-sim)
-[![Python](https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-2.7-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![Isaac Lab](https://img.shields.io/badge/NVIDIA-Isaac%20Lab%203.x-76B900?logo=nvidia&logoColor=white)](https://isaac-sim.github.io/IsaacLab/)
+[![Isaac Sim](https://img.shields.io/badge/Isaac%20Sim-6.2-76B900?logo=nvidia&logoColor=white)](https://developer.nvidia.com/isaac-sim)
+[![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.11-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
 [![Algorithm](https://img.shields.io/badge/Algorithm-PPO-4B8BBE)](https://arxiv.org/abs/1707.06347)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -22,7 +22,14 @@ The robot stands pitched up, balancing segway-style on its two rear wheels. Usin
 </div>
 
 > [!NOTE]
-> **This is a learning project, built in public.** It started as my hands-on way of teaching myself NVIDIA Isaac Lab from an online example, and I have kept rebuilding and extending it as I learn. It is now a full Isaac Lab 2.3.2 project with four trained policies, but the "learning in public" spirit stays: the honest scope, the mistakes fixed along the way (see the base-height sign bug below), and the open roadmap are all part of the point.
+> **This is a learning project, built in public.** It started as my hands-on way of teaching myself NVIDIA Isaac Lab from an online example, and I have kept rebuilding and extending it as I learn. The original Isaac Lab 2.3.2 project shipped four trained policies, but the "learning in public" spirit stays: the honest scope, the mistakes fixed along the way (see the base-height sign bug below), and the open roadmap are all part of the point.
+
+> **3.x migration:** This branch targets Isaac Lab **main** with **Isaac Sim 6.2**,
+> **PhysX**, and **RSL-RL PPO** through the standard CLI. See
+> [the migration report](docs/MIGRATION_ISAACLAB_3.md) for the audited framework
+> revision, API mappings, static check results, and required container tests.
+> The demonstrations and pretrained checkpoints below are historical 2.x results;
+> they have not been validated with the migrated simulator or RSL-RL 5.
 
 ## Trained policies in action
 
@@ -74,13 +81,13 @@ Six tasks are registered and four policies are trained end to end in this repo, 
 
 ## Overview
 
-This project trains a **wheeled quadruped**, a four-legged robot whose rear feet are driven wheels, to **balance and stay standing** and to **drive while balancing**, using deep reinforcement learning. It is built as a standalone **[NVIDIA Isaac Lab](https://isaac-sim.github.io/IsaacLab/) 2.3.2** external project (the modern `isaaclab` package namespace, not the legacy `omni.isaac.lab`), using Isaac Lab's **manager-based RL environment** API.
+This project trains a **wheeled quadruped**, a four-legged robot whose rear feet are driven wheels, to **balance and stay standing** and to **drive while balancing**, using deep reinforcement learning. It is built as a standalone **[NVIDIA Isaac Lab](https://isaac-sim.github.io/IsaacLab/) 3.x** external project (the modern `isaaclab` package namespace, not the legacy `omni.isaac.lab`), using Isaac Lab's **manager-based RL environment** API.
 
 The control problem is a **3D inverted-pendulum / self-balancing** task. The robot is pitched up, resting on its two rear wheels at a base height of **0.828 m**, and the policy must actuate the rear wheels and front thigh joints so the torso stays near that upright target and does not tip over. Training runs across thousands of **parallel environments** on the GPU and is optimized with **Proximal Policy Optimization (PPO)**.
 
 A defining design choice is that **the policy only ever sees quantities a real robot could measure onboard**: body-frame angular velocity, a gravity direction estimate from an IMU, joint positions, joint velocities, and its own last action. It never sees its world-frame linear velocity or absolute height. To keep learning tractable anyway, the value function does get those privileged signals during training, an **asymmetric actor-critic**, because they are trivially available in simulation but only used to shape the critic, which is discarded at deployment.
 
-The tasks are registered as Gymnasium environments. The balance task ships PPO configs for four RL libraries (**rsl_rl, rl_games, Stable-Baselines3, and skrl**) so it plugs directly into Isaac Lab's standard training workflows, and this repo also ships its own thin `scripts/rsl_rl/` train/play wrappers.
+The tasks are registered as Gymnasium environments. The migrated task registrations expose **RSL-RL PPO** through Isaac Lab's standard training workflow, and the standard CLI loads the external task package automatically. Legacy `scripts/rsl_rl/` wrappers are retained but not migrated.
 
 ## How it works
 
@@ -169,25 +176,25 @@ flowchart LR
 
 | Task id | Description | Config |
 |---|---|---|
-| `Wheeled-Quadruped-Balance-v0` | Stand and balance in place on the rear wheels | `WheeledQuadrupedBalanceEnvCfg` |
-| `Wheeled-Quadruped-Balance-Play-v0` | Balance, eval variant (32 envs, no noise, no pushes) | `WheeledQuadrupedBalanceEnvCfg_PLAY` |
-| `Custom-Wheeled-Quadruped-v0` | Legacy alias, same balance config | `WheeledQuadrupedBalanceEnvCfg` |
-| `Wheeled-Quadruped-Velocity-v0` | Drive to a commanded forward/yaw velocity while balancing | `WheeledQuadrupedVelocityEnvCfg` |
-| `Wheeled-Quadruped-Velocity-Play-v0` | Velocity, eval variant (fixed forward command) | `WheeledQuadrupedVelocityEnvCfg_PLAY` |
-| `Wheeled-Quadruped-Balance-Rough-v0` | Balance on uneven ground (generated rough terrain) | `WheeledQuadrupedBalanceRoughEnvCfg` |
-| `Wheeled-Quadruped-Velocity-Rough-v0` | Drive while balancing on uneven ground, with a terrain curriculum | `WheeledQuadrupedVelocityRoughEnvCfg` |
+| `Wheeled-Quadruped-Balance` | Stand and balance in place on the rear wheels | `WheeledQuadrupedBalanceEnvCfg` |
+| `Wheeled-Quadruped-Balance-Play` | Balance, eval variant (32 envs, no noise, no pushes) | `WheeledQuadrupedBalanceEnvCfg_PLAY` |
+| `Custom-Wheeled-Quadruped` | Legacy alias, same balance config | `WheeledQuadrupedBalanceEnvCfg` |
+| `Wheeled-Quadruped-Velocity` | Drive to a commanded forward/yaw velocity while balancing | `WheeledQuadrupedVelocityEnvCfg` |
+| `Wheeled-Quadruped-Velocity-Play` | Velocity, eval variant (fixed forward command) | `WheeledQuadrupedVelocityEnvCfg_PLAY` |
+| `Wheeled-Quadruped-Balance-Rough` | Balance on uneven ground (generated rough terrain) | `WheeledQuadrupedBalanceRoughEnvCfg` |
+| `Wheeled-Quadruped-Velocity-Rough` | Drive while balancing on uneven ground, with a terrain curriculum | `WheeledQuadrupedVelocityRoughEnvCfg` |
 
-*(Each rough task also has a `-Rough-Play-v0` eval variant.)*
+*(Each rough task also has a `-Rough-Play` eval variant.)*
 
 The velocity task extends the balancer. It adds a `UniformVelocityCommand` (with lateral velocity pinned to zero, since a two-wheel stance cannot translate sideways), appends the command to both observation groups, adds exponential velocity-tracking rewards, and softens the balance-hold shaping so the policy is free to drive. See [docs/TRAINING.md](docs/TRAINING.md) for the full design.
 
 ### Rough terrain (uneven ground)
 
-The `*-Rough-v0` tasks swap the flat ground plane for a **generated rough terrain** ([`source/wheeled_quadruped/wheeled_quadruped/terrains/`](source/wheeled_quadruped/wheeled_quadruped/terrains/__init__.py)) so the policy learns to stay up on uneven surfaces. Because a two-wheel balancer cannot climb stairs, the terrain is tuned for wheels: **low-amplitude random roughness (roughly 1 to 6 cm) plus gentle slopes (up to about 11 degrees), no stairs or boxes**. The velocity-rough task adds a **terrain-level curriculum** (`terrain_levels_vel`): robots that track their command well are promoted to rougher tiles, and those that fall behind are demoted. Train them exactly like the flat tasks:
+The `*-Rough` tasks swap the flat ground plane for a **generated rough terrain** ([`source/wheeled_quadruped/wheeled_quadruped/terrains/`](source/wheeled_quadruped/wheeled_quadruped/terrains/__init__.py)) so the policy learns to stay up on uneven surfaces. Because a two-wheel balancer cannot climb stairs, the terrain is tuned for wheels: **low-amplitude random roughness (roughly 1 to 6 cm) plus gentle slopes (up to about 11 degrees), no stairs or boxes**. The velocity-rough task adds a **terrain-level curriculum** (`terrain_levels_vel`): robots that track their command well are promoted to rougher tiles, and those that fall behind are demoted. Train them exactly like the flat tasks:
 
 ```bash
-python scripts/rsl_rl/train.py --task Wheeled-Quadruped-Balance-Rough-v0 --headless --num_envs 2048
-python scripts/rsl_rl/train.py --task Wheeled-Quadruped-Velocity-Rough-v0 --headless --num_envs 2048
+uv run --extra isaacsim --with-editable "$ROBOT_PACKAGE" isaaclab train --rl_library rsl_rl --task Wheeled-Quadruped-Balance-Rough --num_envs 2048 physics=isaacsim_physx visualizer=none
+uv run --extra isaacsim --with-editable "$ROBOT_PACKAGE" isaaclab train --rl_library rsl_rl --task Wheeled-Quadruped-Velocity-Rough --num_envs 2048 physics=isaacsim_physx visualizer=none
 ```
 
 ## The robot
@@ -225,84 +232,67 @@ wheeled_quadruped_robot/
 
 ## Prerequisites
 
-| Requirement | Notes |
-|---|---|
-| **NVIDIA RTX GPU** + recent driver | Isaac Sim 5.1 needs a modern driver; PhysX GPU simulation is required |
-| **Roughly 60 to 80 GB free disk** | Isaac Sim, Isaac Lab, and the extension cache are large. Budget the space before you start; see the disk warning below |
-| **Python 3.11** | The exact interpreter Isaac Sim 5.1 / Isaac Lab 2.3.2 target |
-| Windows 10/11 or Linux | This repo is developed Windows-native; see [docs/SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md) |
-| ROS 2 + `ament_cmake`, `xacro` | Optional, only to rebuild `src/robot_description/` |
-
-> [!WARNING]
-> **Disk space is the number-one gotcha.** A full Isaac Sim 5.1 + Isaac Lab 2.3.2 install (pip wheels, the Omniverse extension cache, and the first-run extension-registry pull) commonly consumes 60 GB or more. On WSL2 the Isaac Sim GPU stack is not supported, and the WSL virtual disk still lives on your Windows `C:` drive, so WSL does not save you the space. Free the room first.
+- An NVIDIA GPU and driver supported by **Isaac Sim 6.2**.
+- A fresh **Isaac Lab main** checkout and its supported **Python 3.12 / uv** environment.
+- Use the framework workspace's dependency versions and overrides; do not upgrade an old 2.x virtual environment in place.
 
 ## Installation
 
-Isaac Sim and Isaac Lab are installed **via pip into a Python 3.11 virtual environment** (the modern workflow; no `isaaclab.sh`/`isaaclab.bat` wrapper is assumed anywhere in this repo).
+This remains an external task package in `source/wheeled_quadruped`. Run the
+following from your Isaac Lab main checkout (replace the package path if needed):
 
 ```bash
-# 1. Clone
-git clone https://github.com/MickyasTA/wheeled_quadruped_robot.git
-cd wheeled_quadruped_robot
-
-# 2. Create and activate a Python 3.11 venv
-python3.11 -m venv .venv
-source .venv/bin/activate               # Windows: .\.venv\Scripts\Activate.ps1
-
-# 3. Upgrade pip
-python -m pip install --upgrade pip
-
-# 4. Install Isaac Sim 5.1
-pip install "isaacsim[all,extscache]==5.1.0" --extra-index-url https://pypi.nvidia.com
-
-# 5. Install the matching PyTorch (CUDA 12.8 build)
-pip install torch==2.7.0 torchvision --index-url https://download.pytorch.org/whl/cu128
-
-# 6. Install Isaac Lab 2.3.2 (pulls in the RL frameworks: rsl-rl, skrl, sb3, rl-games)
-pip install "isaaclab[all]==2.3.2.post1" --extra-index-url https://pypi.nvidia.com
-
-# 7. Install this project's task package (editable)
-pip install -e source/wheeled_quadruped
+export ROBOT_PACKAGE=/workspace/wheeled_quadruped_robot/source/wheeled_quadruped
+uv sync --extra isaacsim
+uv run --extra isaacsim --with-editable "$ROBOT_PACKAGE" isaaclab list_envs
 ```
 
-On Windows, **enable long paths** before installing (Isaac Sim's dependency tree exceeds the legacy 260-character limit) and expect the **first run to stall for 10+ minutes** while the Omniverse extension registry is pulled and compiled. The full step-by-step for a Windows machine, including the mandatory disk cleanup, is in **[docs/SETUP_WINDOWS.md](docs/SETUP_WINDOWS.md)**.
+The package's `isaaclab.tasks` entry point makes all nine task IDs discoverable.
+A bare `import wheeled_quadruped` is passive; direct Gymnasium users must import
+`wheeled_quadruped.tasks` before looking up task IDs. Canonical task IDs no longer
+have the `-v0` suffix. Only RSL-RL is advertised by the migrated registrations.
+The old alternative-agent YAML files and custom scripts are retained as legacy
+material and are outside this migration's supported workflow.
 
-> [!NOTE]
-> Isaac Lab 2.3.2 pairs with **rsl-rl-lib 3.0 or newer** (installed by the `isaaclab[all]` extras); the `scripts/rsl_rl/` train/play scripts target that API. One extra pin worth knowing: `tensordict==0.8.3` matches torch 2.7 (newer builds crash on import). If your environment pins an older `rsl-rl-lib`, upgrade it to match Isaac Lab 2.3.2.
+### Verify the configuration
 
-### Verify the install
+From the same Isaac Lab checkout:
 
 ```bash
-python scripts/verify_env.py --num_envs 8
+uv run --extra isaacsim --with-editable "$ROBOT_PACKAGE" --with pytest python -m pytest /workspace/wheeled_quadruped_robot/tests/test_migration_config.py -q
 ```
 
-This loads the environment, prints the robot's joints/bodies and per-observation-group shapes, runs a short random rollout, checks every observation and reward tensor for NaN/Inf, and prints a PASS/FAIL summary. Treat it as the acceptance gate before training.
+This constructs real framework configurations without starting the simulator.
+It does not validate physics or training. Before training, run the container
+acceptance checks in [the migration report](docs/MIGRATION_ISAACLAB_3.md).
+Do not use the legacy `scripts/verify_env.py` as a 3.x acceptance test.
 
 ## Usage
 
-All scripts are launched with the venv's `python` (no wrapper). From the repo root:
+Continue in the Isaac Lab main checkout with `ROBOT_PACKAGE` set as above:
 
 ```bash
-# List every registered task in this project
-python scripts/list_envs.py
+# PhysX random-action smoke test (requires the Isaac Sim runtime)
+uv run --extra isaacsim --with-editable "$ROBOT_PACKAGE" isaaclab random_agent --task Wheeled-Quadruped-Balance --num_envs 8 --max_steps 1000 physics=isaacsim_physx visualizer=none
 
-# Train the balance policy (headless, 2048 envs, a good starting point on a 16 GB GPU)
-python scripts/rsl_rl/train.py --task Wheeled-Quadruped-Balance-v0 --headless --num_envs 2048
+# PPO training; use fewer environments first for the acceptance test
+uv run --extra isaacsim --with-editable "$ROBOT_PACKAGE" isaaclab train --rl_library rsl_rl --task Wheeled-Quadruped-Balance --num_envs 2048 physics=isaacsim_physx visualizer=none
+uv run --extra isaacsim --with-editable "$ROBOT_PACKAGE" isaaclab train --rl_library rsl_rl --task Wheeled-Quadruped-Velocity --num_envs 2048 physics=isaacsim_physx visualizer=none
 
-# Train the velocity-tracking policy
-python scripts/rsl_rl/train.py --task Wheeled-Quadruped-Velocity-v0 --headless --num_envs 2048
-
-# Watch / export a trained checkpoint (loads the latest run by default)
-python scripts/rsl_rl/play.py --task Wheeled-Quadruped-Balance-Play-v0 --num_envs 32
-
-# Measure how accurately a velocity policy tracks its command
-python scripts/eval_tracking.py --task Wheeled-Quadruped-Velocity-v0 --num_envs 256 --steps 800 --headless
+# Play a checkpoint produced by the migrated RSL-RL 5 runner
+uv run --extra isaacsim --with-editable "$ROBOT_PACKAGE" isaaclab play --rl_library rsl_rl --task Wheeled-Quadruped-Velocity-Play --num_envs 32 --checkpoint /absolute/path/to/new/model.pt physics=isaacsim_physx visualizer=kit
 ```
 
-Checkpoints and TensorBoard logs are written to `logs/rsl_rl/<experiment_name>/`.
+Use `visualizer=none` for headless execution, or `visualizer=kit` for interactive
+viewing. Logs go under the Isaac Lab working directory's
+`logs/rsl_rl/<experiment_name>/`. The preserved `*-Play` configurations disable
+noise and pushes and fix the velocity command for evaluation. Rough task
+variants use the same commands with their corresponding task IDs.
 
-> [!NOTE]
-> Because the **balance** tasks register `skrl_cfg_entry_point`, `sb3_cfg_entry_point`, and `rl_games_cfg_entry_point`, **Isaac Lab's own** `scripts/reinforcement_learning/{skrl,sb3,rl_games}/train.py` workflow scripts also work with the Balance task ids, provided the script imports this package first (`import wheeled_quadruped.tasks`). The velocity tasks register **rsl_rl only**. Note also that only the rsl_rl workflow consumes the privileged `critic` observation group (asymmetric actor-critic); skrl/sb3/rl_games train symmetrically on the `policy` group. The `scripts/` folder in this repo is the supported, batteries-included path.
+The custom `scripts/rsl_rl/train.py`, `play.py`, `scripts/verify_env.py`,
+and other legacy scripts have **not** been migrated. The old 2.x checkpoints
+use a different RSL-RL model/state layout; do not assume they can resume or play
+with the new runner. Their exported MuJoCo/ONNX workflows remain separate.
 
 ## PPO hyperparameters
 
@@ -325,7 +315,7 @@ From the rsl_rl agent configs ([balance](source/wheeled_quadruped/wheeled_quadru
 | Init. action noise std | 1.0 | 1.0 |
 | Empirical normalization | off | off |
 
-The actor reads the `policy` observation group and the critic reads the `critic` group; this mapping is declared in the runner cfg via `obs_groups = {"policy": ["policy"], "critic": ["critic"]}` (resolved by rsl-rl 3.0+ from the runner cfg, not the env wrapper).
+The actor reads the `policy` observation group and the critic reads the `critic` group; this mapping is declared in the runner cfg via `obs_groups = {"actor": ["policy"], "critic": ["critic"]}` in RSL-RL 5. The actor and critic now have separate MLP model configurations.
 
 ## Results
 
@@ -380,13 +370,11 @@ All four trained policies are committed in [`pretrained/`](pretrained/) for imme
 |---|---|---|
 | `policy.onnx` | ONNX | Framework-agnostic inference (onnxruntime): deployment, C++, other runtimes |
 | `policy_torchscript.pt` | TorchScript | Standalone PyTorch inference without Isaac Lab installed |
-| `model_*.pt` | rsl-rl checkpoint | Replay or resume in-sim with `scripts/rsl_rl/play.py` |
+| `model_*.pt` | rsl-rl checkpoint | Historical RSL-RL 3 checkpoint; conversion/retraining required for the new runner |
 
-```bash
-# Replay a shipped policy in Isaac Sim (point --checkpoint at the committed file):
-python scripts/rsl_rl/play.py --task Wheeled-Quadruped-Velocity-Play-v0 --num_envs 9 \
-  --checkpoint pretrained/velocity/model_2999.pt
-```
+The shipped checkpoints were trained with Isaac Lab 2.x. Their compatibility
+with RSL-RL 5 has not been established. Use a newly trained 3.x checkpoint with
+the standard play command in [Usage](#usage).
 
 The exported `policy.onnx` / `policy_torchscript.pt` contain only the actor MLP and its observation normalizer, that is, the **onboard-only** deployable policy, with the privileged critic already stripped. See [`pretrained/README.md`](pretrained/README.md) for the observation layout and a minimal ONNX inference example.
 
